@@ -93,7 +93,7 @@ jobs:
           echo "Got runtime $runtime; Humanizing"
           humanized_runtime=`python .utils/humanizeDuration.py ${runtime}`
           echo "humanized $humanized_runtime"
-          echo "name=time::${humanized_runtime}" >> $GITHUB_OUTPUT
+          echo "time=${humanized_runtime}" >> $GITHUB_OUTPUT
       - name: Create Runtime Badge
         id: badge_attempt_1
         continue-on-error: true
