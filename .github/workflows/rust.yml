@@ -1,0 +1,117 @@
+name: Rust
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+      - name: Build
+        run: |
+          cargo install cargo-aoc || true
+          cargo build --verbose
+          cargo aoc bench -d1 -p1
+          tar -czvf build-artifact.tar.gz target
+      - name: Run tests
+        run: cargo test --verbose
+      - uses: actions/upload-artifact@v3
+        with:
+          name: build-artifact
+          path: build-artifact.tar.gz
+          retention-days: 1
+  pre-benchmark:
+    runs-on: ubuntu-22.04
+    outputs:
+      matrix: ${{ steps.set-days-matrix.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: technote-space/get-diff-action@v6
+        with:
+          PATTERNS: |
+            input/2023/*.txt
+            src/solutions/*.rs
+            !src/solutions/mod.rs
+          FILES: |
+            Cargo.lock
+      - name: Identify days to benchmark
+        id: set-days-matrix
+        run: |
+          echo $GIT_DIFF
+          matrix=`ls input/2023/ | sed -r 's/day([0-9]+).*/\1/g' | jq -sc 'unique'`
+          echo "${matrix}"
+          echo "matrix=${matrix}" >> $GITHUB_OUTPUT
+  benchmark:
+    needs:
+      - pre-benchmark
+      - build
+    runs-on: ubuntu-22.04
+    continue-on-error: true
+    strategy:
+      matrix:
+        day: ${{ fromJSON(needs.pre-benchmark.outputs.matrix) }}
+        part: [1, 2]
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+      - uses: actions/download-artifact@v2
+        with:
+          name: build-artifact
+      - name: unpack artifacts
+        run: |
+          tar -xzvf build-artifact.tar.gz
+      - name: Benchmark Day ${{ matrix.day }} Part ${{ matrix.part }}
+        id: benchmark
+        run: |
+          cargo aoc bench -d ${{ matrix.day }} -p ${{ matrix.part }}
+          echo "Getting Runtime"
+          runtime=`cat target/aoc/aoc-autobench/target/criterion/Day${{ matrix.day }}\ -\ Part${{ matrix.part }}/\(default\)/base/estimates.json | jq -r '.Mean.point_estimate | floor'`
+          echo "Got runtime $runtime; Humanizing"
+          humanized_runtime=`python .utils/humanizeDuration.py ${runtime}`
+          echo "humanized $humanized_runtime"
+          echo "name=time::${humanized_runtime}" >> $GITHUB_OUTPUT
+      - name: Create Runtime Badge
+        id: badge_attempt_1
+        continue-on-error: true
+        uses: schneegans/dynamic-badges-action@v1.1.0
+        with:
+          auth: ${{ secrets.GIST_SECRET }}
+          gistID: a054aa6c1453da6f3126d12b4d59ff59
+          filename: benchmark-aoc-2023-day-${{ matrix.day }}-part-${{ matrix.part }}.json
+          label: runtime
+          message: ${{ steps.benchmark.outputs.time }}
+          color: informational
+      - name: Create Runtime Badge retry
+        if: steps.badge_attempt_1.outcome=='failure'
+        uses: schneegans/dynamic-badges-action@v1.1.0
+        with:
+          auth: ${{ secrets.GIST_SECRET }}
+          gistID: a054aa6c1453da6f3126d12b4d59ff59
+          filename: benchmark-aoc-2023-day-${{ matrix.day }}-part-${{ matrix.part }}.json
+          label: runtime
+          message: ${{ steps.benchmark.outputs.time }}
+          color: informational
