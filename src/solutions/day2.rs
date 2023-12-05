@@ -4,20 +4,29 @@ use std::collections::HashMap;
 
 #[aoc_generator(day2)]
 pub fn generator(raw_input: &str) -> Vec<(i32, Vec<Vec<(String, i8)>>)> {
-    raw_input.split("\n")
+    raw_input
+        .split("\n")
         .map(|l| {
             let split1: Vec<&str> = l.split(": ").collect();
             let (game, draws_raw_str) = (split1[0], split1[1]);
-            let draws = draws_raw_str.split("; ")
+            let draws = draws_raw_str
+                .split("; ")
                 .map(|d| {
-                    d.split(", ").map(|c| {
-                        let split2: Vec<&str> = c.split(" ").collect();
-                        let (count_str, color) = (split2[0], split2[1]);
-                        (color.to_string(), count_str.parse::<i8>().unwrap())
-                    }).collect()
-                }).collect();
-            (game.split(" ").last().unwrap().parse::<i32>().unwrap(), draws)
-        }).collect()
+                    d.split(", ")
+                        .map(|c| {
+                            let split2: Vec<&str> = c.split(" ").collect();
+                            let (count_str, color) = (split2[0], split2[1]);
+                            (color.to_string(), count_str.parse::<i8>().unwrap())
+                        })
+                        .collect()
+                })
+                .collect();
+            (
+                game.split(" ").last().unwrap().parse::<i32>().unwrap(),
+                draws,
+            )
+        })
+        .collect()
 }
 
 #[aoc(day2, part1)]
@@ -29,7 +38,8 @@ pub fn solve_part1(readings: &[(i32, Vec<Vec<(String, i8)>>)]) -> i32 {
         map.insert("blue".to_string(), 14);
         map
     };
-    readings.iter()
+    readings
+        .iter()
         .filter(|(_, rounds)| {
             let mut ans = true;
             for draws in rounds {
@@ -48,19 +58,22 @@ pub fn solve_part1(readings: &[(i32, Vec<Vec<(String, i8)>>)]) -> i32 {
                 }
             }
             ans
-        }).map(|(gamenum, _)| { gamenum })
+        })
+        .map(|(gamenum, _)| gamenum)
         .sum()
 }
 
 #[aoc(day2, part2)]
-pub fn solve_part2(readings:  &[(i32, Vec<Vec<(String, i8)>>)]) -> usize {
+pub fn solve_part2(readings: &[(i32, Vec<Vec<(String, i8)>>)]) -> usize {
     let mut available_stones = HashMap::<String, usize>::with_capacity(3);
-    readings.iter()
+    readings
+        .iter()
         .map(|(_, rounds)| {
             available_stones.clear();
             for draws in rounds {
                 for d in draws {
-                    available_stones.entry(d.clone().0)
+                    available_stones
+                        .entry(d.clone().0)
                         .and_modify(|v| *v = cmp::max(*v, d.1 as usize))
                         .or_insert(d.1 as usize);
                 }
@@ -70,7 +83,8 @@ pub fn solve_part2(readings:  &[(i32, Vec<Vec<(String, i8)>>)]) -> usize {
                 ans *= v;
             }
             ans
-        }).sum()
+        })
+        .sum()
 }
 
 #[cfg(test)]
