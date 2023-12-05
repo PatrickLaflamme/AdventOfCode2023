@@ -22,7 +22,7 @@ pub fn generator(raw_input: &str) -> Vec<(i32, Vec<Vec<(String, i8)>>)> {
 
 #[aoc(day2, part1)]
 pub fn solve_part1(readings: &[(i32, Vec<Vec<(String, i8)>>)]) -> i32 {
-    let availableStones = {
+    let available_stones = {
         let mut map = HashMap::<String, i8>::new();
         map.insert("red".to_string(), 12);
         map.insert("green".to_string(), 13);
@@ -30,11 +30,11 @@ pub fn solve_part1(readings: &[(i32, Vec<Vec<(String, i8)>>)]) -> i32 {
         map
     };
     readings.iter()
-        .filter(|(gamenum, rounds)| {
+        .filter(|(_, rounds)| {
             let mut ans = true;
             for draws in rounds {
                 for d in draws {
-                    match availableStones.get(&d.0) {
+                    match available_stones.get(&d.0) {
                         Some(count) => {
                             if count < &d.1 {
                                 ans = false;
@@ -56,7 +56,7 @@ pub fn solve_part1(readings: &[(i32, Vec<Vec<(String, i8)>>)]) -> i32 {
 pub fn solve_part2(readings:  &[(i32, Vec<Vec<(String, i8)>>)]) -> usize {
     let mut available_stones = HashMap::<String, usize>::with_capacity(3);
     readings.iter()
-        .map(|(gamenum, rounds)| {
+        .map(|(_, rounds)| {
             available_stones.clear();
             for draws in rounds {
                 for d in draws {
