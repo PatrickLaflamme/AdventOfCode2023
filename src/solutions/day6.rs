@@ -28,7 +28,6 @@ pub fn solve_part1(readings: &[(usize, usize)]) -> usize {
 pub fn solve_part2(readings: &[(usize, usize)]) -> usize {
     let record = readings.iter().fold(0, |acc, i| acc * 10_usize.pow(i.0.ilog10() + 1) + i.0);
     let distance = readings.iter().fold(0, |acc, i| acc * 10_usize.pow(i.1.ilog10() + 1) + i.1);
-    println!("{},{}", &record, &distance);
     let mut t = 0;
     while t <= record {
         if t*(record - t) > distance {
